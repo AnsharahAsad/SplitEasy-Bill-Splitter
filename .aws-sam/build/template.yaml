@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SplitEasy Bill Splitter Serverless Backend
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 128
+    Environment:
+      Variables:
+        TABLE_NAME:
+          Ref: SplitsTable
+Resources:
+  SplitsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SplitEasySplits
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      - AttributeName: createdAt
+        KeyType: RANGE
+  SplitEasyUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: SplitEasyUserPool
+      AutoVerifiedAttributes:
+      - email
+      UsernameAttributes:
+      - email
+  SplitEasyUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: SplitEasyUserPoolClient
+      UserPoolId:
+        Ref: SplitEasyUserPool
+      GenerateSecret: false
+  SplitEasyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: '''GET,POST,OPTIONS'''
+        AllowHeaders: '''Content-Type,Authorization'''
+        AllowOrigin: '''*'''
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn:
+              Fn::GetAtt:
+              - SplitEasyUserPool
+              - Arn
+  CreateSplitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SplitEasyCreateSplit
+      CodeUri: CreateSplitFunction
+      Handler: src/createSplit.handler
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: SplitsTable
+      Events:
+        CreateSplitApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: SplitEasyApi
+            Path: /splits
+            Method: post
+    Metadata:
+      SamResourceId: CreateSplitFunction
+  GetSplitsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SplitEasyGetSplits
+      CodeUri: GetSplitsFunction
+      Handler: src/getSplits.handler
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: SplitsTable
+      Events:
+        GetSplitsApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: SplitEasyApi
+            Path: /splits
+            Method: get
+    Metadata:
+      SamResourceId: GetSplitsFunction
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${SplitEasyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value:
+      Ref: SplitEasyUserPool
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value:
+      Ref: SplitEasyUserPoolClient
+  DynamoDBTableName:
+    Description: DynamoDB table name
+    Value:
+      Ref: SplitsTable
