@@ -4,7 +4,7 @@ Description: SplitEasy Bill Splitter Serverless Backend
 
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs22.x
     Timeout: 10
     MemorySize: 128
     Environment:
@@ -12,6 +12,7 @@ Globals:
         TABLE_NAME: !Ref SplitsTable
 
 Resources:
+
   SplitsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -53,7 +54,6 @@ Resources:
         AllowHeaders: "'Content-Type,Authorization'"
         AllowOrigin: "'*'"
       Auth:
-        DefaultAuthorizer: CognitoAuthorizer
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt SplitEasyUserPool.Arn
@@ -74,6 +74,8 @@ Resources:
             RestApiId: !Ref SplitEasyApi
             Path: /splits
             Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
 
   GetSplitsFunction:
     Type: AWS::Serverless::Function
@@ -91,6 +93,8 @@ Resources:
             RestApiId: !Ref SplitEasyApi
             Path: /splits
             Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 Outputs:
   ApiUrl:

@@ -19,17 +19,24 @@ function Dashboard({ user, setUser }) {
   };
 
   const fetchSplits = async () => {
-    try {
-      const token = await getToken();
-      const res = await fetch(`${API_URL}/splits`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setSplits(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Failed to fetch splits", err);
-    }
-  };
+  try {
+    const token = await getToken();
+
+    const res = await fetch(`${API_URL}/splits`, {
+      headers: {
+        Authorization: token
+      }
+    });
+
+    const data = await res.json();
+
+    console.log("GET SPLITS RESPONSE:", data);
+
+    setSplits(data.splits || []);
+  } catch (err) {
+    console.error("Failed to fetch splits", err);
+  }
+};
 
   useEffect(() => { fetchSplits(); }, []);
 
@@ -45,7 +52,7 @@ function Dashboard({ user, setUser }) {
       const token = await getToken();
       const res = await fetch(`${API_URL}/splits`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
         body: JSON.stringify({ billName, totalAmount: Number(amount), people: peopleList }),
       });
       if (res.status === 201) {
@@ -69,7 +76,7 @@ function Dashboard({ user, setUser }) {
     setUser(null);
   };
 
-  const totalSplitAmount = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
+  const totalSplitAmount = splits.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
 
   return (
     <div style={styles.page}>
@@ -233,7 +240,7 @@ function Dashboard({ user, setUser }) {
                           })}
                         </p>
                       </div>
-                      <span style={styles.splitAmount}>${split.amount}</span>
+                      <span style={styles.splitAmount}>${split.totalAmount}</span>
                     </div>
                     <div style={styles.tags}>
                       {split.people.map(p => (

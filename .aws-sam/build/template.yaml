@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: SplitEasy Bill Splitter Serverless Backend
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs22.x
     Timeout: 10
     MemorySize: 128
     Environment:
@@ -50,7 +50,6 @@ Resources:
         AllowHeaders: '''Content-Type,Authorization'''
         AllowOrigin: '''*'''
       Auth:
-        DefaultAuthorizer: CognitoAuthorizer
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn:
@@ -75,6 +74,8 @@ Resources:
               Ref: SplitEasyApi
             Path: /splits
             Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
     Metadata:
       SamResourceId: CreateSplitFunction
   GetSplitsFunction:
@@ -95,6 +96,8 @@ Resources:
               Ref: SplitEasyApi
             Path: /splits
             Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
     Metadata:
       SamResourceId: GetSplitsFunction
 Outputs:
